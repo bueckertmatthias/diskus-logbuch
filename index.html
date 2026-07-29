@@ -193,6 +193,7 @@ button{font-family:inherit; font-size:inherit;}
   font-weight:600; font-size:.88rem; cursor:pointer;
 }
 .btn:hover{border-color:var(--ink-muted);}
+.btn:disabled{opacity:.5; cursor:not-allowed;}
 .btn-primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
 .btn-primary:hover{filter:brightness(1.06);}
 .btn-warm{background:var(--accent-warm); color:#fff; border-color:var(--accent-warm);}
@@ -312,6 +313,22 @@ hr.divider{border:none; border-top:1px solid var(--border); margin:18px 0;}
     <p style="margin:12px 0 0;">Am Desktop (Windows/Mac): Doppelklick auf die Datei öffnet sie normalerweise direkt im Standardbrowser — dort sollte JavaScript automatisch aktiv sein.</p>
   </div>
 </noscript>
+<div id="onboarding-modal" style="position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;">
+  <div class="card" style="max-width:520px; max-height:90vh; overflow-y:auto;">
+    <h2>Bevor es losgeht — kurz lesen</h2>
+    <ul style="margin:12px 0; padding-left:20px; line-height:1.6; color:var(--ink);">
+      <li style="margin-bottom:10px;"><strong>iPhone/iPad:</strong> Füge diese Seite jetzt, <em>bevor</em> du irgendwelche Daten einträgst, über "Teilen" → "Zum Home-Bildschirm" hinzu und öffne sie ab sofort nur noch über dieses Icon. Home-Bildschirm-Icon und normaler Safari-Tab speichern getrennt voneinander — wer zuerst im normalen Safari-Tab einträgt und die Seite erst danach zum Home-Bildschirm hinzufügt, sieht dort eine leere Version und hält sie für gelöscht.</li>
+      <li style="margin-bottom:10px;"><strong>Speicherung:</strong> Alle Daten bleiben ausschließlich lokal in diesem Browser auf diesem Gerät — kein Server, keine Cloud. Sichere regelmäßig ein Backup über den Export-Button oben rechts.</li>
+      <li><strong>Werte im Tool:</strong> Alle Sollwerte, Wachstumsspannen und Dosierungsempfehlungen sind Orientierungswerte auf Basis öffentlich zugänglicher Quellen — kein Ersatz für tierärztliche oder fachkundige Beratung.</li>
+    </ul>
+    <label style="display:flex; gap:8px; align-items:flex-start; margin:16px 0; cursor:pointer;">
+      <input type="checkbox" id="onboarding-ack-checkbox" style="margin-top:3px;">
+      <span>Ich habe das gelesen und verstanden.</span>
+    </label>
+    <button class="btn btn-primary" id="onboarding-ack-confirm" disabled>Verstanden, weiter zum Tool</button>
+  </div>
+</div>
+
 <div class="app-shell">
 
   <header class="app-header">
@@ -710,6 +727,11 @@ hr.divider{border:none; border-top:1px solid var(--border); margin:18px 0;}
         privaten/Inkognito-Modus arbeitest oder zu einem anderen Browser bzw. Gerät wechselst.
         Nutze für diese Fälle regelmäßig den Export-Button oben rechts, um ein Backup als Datei
         zu sichern.
+      </p>
+      <p class="card-sub">
+        <strong>iPhone/iPad:</strong> Falls noch nicht geschehen — über "Teilen" → "Zum
+        Home-Bildschirm" ein Icon anlegen und ab jetzt nur noch darüber öffnen. Home-Bildschirm-Icon
+        und normaler Safari-Tab speichern getrennt voneinander.
       </p>
     </div>
   </section>
@@ -1884,6 +1906,25 @@ document.getElementById("btn-theme").addEventListener("click", function(){
   try{ localStorage.setItem(THEME_KEY, next); }catch(e){}
   renderAll();
 });
+
+(function initOnboarding(){
+  var ACK_KEY = "diskus-logbuch-onboarding-ack";
+  var modal = document.getElementById("onboarding-modal");
+  var checkbox = document.getElementById("onboarding-ack-checkbox");
+  var confirmBtn = document.getElementById("onboarding-ack-confirm");
+
+  var acked = null;
+  try{ acked = localStorage.getItem(ACK_KEY); }catch(e){}
+  if(acked){ modal.style.display = "none"; return; }
+
+  checkbox.addEventListener("change", function(){
+    confirmBtn.disabled = !checkbox.checked;
+  });
+  confirmBtn.addEventListener("click", function(){
+    try{ localStorage.setItem(ACK_KEY, "1"); }catch(e){}
+    modal.style.display = "none";
+  });
+})();
 
 (function initLicense(){
   var LICENSE_KEY = "diskus-logbuch-license-name";
