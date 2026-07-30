@@ -750,6 +750,7 @@ hr.divider{border:none; border-top:1px solid var(--border); margin:18px 0;}
    Storage & state
    ============================================================ */
 var STORAGE_KEY = "diskus-logbuch-v1";
+var BACKUP_KEY = "diskus-logbuch-v1-backup";
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
@@ -757,20 +758,55 @@ function defaultState(){
   return { tanks:[], fish:[], waterLogs:[], waterChanges:[], growthLogs:[], healthLogs:[] };
 }
 
+function isValidState(obj){
+  if(!obj || typeof obj !== "object") return false;
+  var d = defaultState();
+  for(var k in d){ if(!Array.isArray(obj[k])) return false; }
+  return true;
+}
+
+function fillDefaults(obj){
+  var d = defaultState();
+  for(var k in d){ if(!obj[k]) obj[k] = d[k]; }
+  return obj;
+}
+
 var state = loadState();
 
 function loadState(){
-  try{
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
-    var parsed = JSON.parse(raw);
-    var d = defaultState();
-    for(var k in d){ if(!parsed[k]) parsed[k] = d[k]; }
-    return parsed;
-  }catch(e){ return defaultState(); }
+  var raw = null;
+  try{ raw = localStorage.getItem(STORAGE_KEY); }catch(e){}
+  if(raw){
+    try{
+      var parsed = JSON.parse(raw);
+      if(isValidState(parsed)) return fillDefaults(parsed);
+    }catch(e){}
+  }
+  // Hauptspeicher fehlt, ist beschädigt oder hat eine ungültige Struktur:
+  // auf die letzte automatische Sicherheitskopie zurückfallen, bevor alles verloren geht.
+  var rawBackup = null;
+  try{ rawBackup = localStorage.getItem(BACKUP_KEY); }catch(e){}
+  if(rawBackup){
+    try{
+      var parsedBackup = JSON.parse(rawBackup);
+      if(isValidState(parsedBackup)){
+        if(raw){
+          setTimeout(function(){
+            toast("⚠ Hauptspeicher war beschädigt — letzte automatische Sicherheitskopie wiederhergestellt. Bitte jetzt ein Backup exportieren!", 9000);
+          }, 600);
+        }
+        return fillDefaults(parsedBackup);
+      }
+    }catch(e){}
+  }
+  return defaultState();
 }
 
 function saveState(){
+  try{
+    var current = localStorage.getItem(STORAGE_KEY);
+    if(current){ localStorage.setItem(BACKUP_KEY, current); }
+  }catch(e){}
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e){ toast("⚠ Speichern fehlgeschlagen (Browser-Speicher evtl. voll) — diese Änderung ist NICHT gesichert. Jetzt Backup exportieren, sonst geht sie beim Neuladen verloren!", 8000); }
 }
